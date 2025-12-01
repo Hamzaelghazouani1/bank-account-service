@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Axon Server - Event Store
+  axon-server:
+    image: axoniq/axonserver:latest
+    container_name: axon-server
+    hostname: axon-server
+    ports:
+      - "8024:8024"   # Dashboard HTTP
+      - "8124:8124"   # gRPC communication
+    environment:
+      - AXONIQ_AXONSERVER_STANDALONE=true
+      - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
+    volumes:
+      - axon-data:/data
+      - axon-events:/eventdata
+      - axon-config:/config
+    networks:
+      - bank-network
+
+  # PostgreSQL - Read Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-bank
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: bank_db
+      POSTGRES_USER: bank_user
+      POSTGRES_PASSWORD: bank_pass
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bank_user -d bank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  axon-data:
+  axon-events:
+  axon-config:
+  postgres-data:
+
+networks:
+  bank-network:
+    driver: bridge
